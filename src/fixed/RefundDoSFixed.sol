@@ -1,0 +1,3 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+contract RefundDoSFixed {address public currentLeader;uint256 public currentBid;mapping(address=>uint256) public pendingReturns;bool private locked;modifier nonReentrant(){require(!locked,"reentrant");locked=true;_;locked=false;}function bid() external payable {require(msg.value>currentBid,"bid too low");if(currentLeader!=address(0))pendingReturns[currentLeader]+=currentBid;currentLeader=msg.sender;currentBid=msg.value;}function withdrawRefund() external nonReentrant {uint256 amount=pendingReturns[msg.sender];require(amount>0,"no refund");pendingReturns[msg.sender]=0;(bool ok,)=payable(msg.sender).call{value:amount}("");require(ok,"refund failed");}}
